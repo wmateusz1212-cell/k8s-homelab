@@ -12,10 +12,10 @@ spec:
       labels:
         app: my-app
     spec:
-containers:
-  - name: nginx
-    image: wmateusz1212/my-k8s-app:latest  # <--- ZMIANA TUTAJ
-    imagePullPolicy: Always  # <--- WAŻNE: Zmusza K8s do pobierania nowej wersji "latest"
+      containers:
+      - name: nginx
+        image: wmateusz1212/my-k8s-app:latest  # <--- ZMIANA TUTAJ
+        imagePullPolicy: Always  # <--- WAŻNE: Zmusza K8s do pobierania nowej wersji "latest"
 ---
 apiVersion: v1
 kind: Service
