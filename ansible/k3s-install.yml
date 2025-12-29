@@ -1,0 +1,65 @@
+---
+# CZĘŚĆ 1: Konfiguracja Master Node (VM1)
+- name: Instalacja K3s Master
+  hosts: masters
+  become: yes
+  tasks:
+    - name: Instalacja K3s (Master Mode)
+      shell: curl -sfL https://get.k3s.io | sh -
+      args:
+        creates: /usr/local/bin/k3s  # Nie uruchamiaj, jeśli już zainstalowano
+
+    - name: Czekaj na start serwera K3s
+      pause:
+        seconds: 15
+
+    - name: Pobierz Node Token (potrzebny dla Workera)
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_base64
+
+    - name: Dekoduj token i zapisz jako fakt (zmienną)
+      set_fact:
+        k3s_token: "{{ k3s_token_base64.content | b64decode | trim }}"
+    
+    # Przekazanie tokenu do drugiej maszyny (magia Ansible)
+    - name: Zapisz token w dummy host (aby worker go widział)
+      add_host:
+        name: "K3S_TOKEN_HOLDER"
+        token: "{{ k3s_token }}"
+        master_ip: "{{ ansible_host }}"
+
+    - name: Konfiguracja kubectl dla użytkownika mwozniak
+      block:
+        - name: Stwórz katalog .kube
+          file:
+            path: /home/mwozniak/.kube
+            state: directory
+            owner: mwozniak
+            group: mwozniak
+            mode: '0755'
+
+        - name: Skopiuj config K3s do .kube/config
+          copy:
+            src: /etc/rancher/k3s/k3s.yaml
+            dest: /home/mwozniak/.kube/config
+            remote_src: yes
+            owner: mwozniak
+            group: mwozniak
+            mode: '0600'
+
+# CZĘŚĆ 2: Konfiguracja Worker Node (VM2)
+- name: Instalacja K3s Worker i dołączenie do klastra
+  hosts: workers
+  become: yes
+  tasks:
+    - name: Pobierz parametry z Mastera
+      set_fact:
+        token: "{{ hostvars['K3S_TOKEN_HOLDER']['token'] }}"
+        master_ip: "{{ hostvars['K3S_TOKEN_HOLDER']['master_ip'] }}"
+
+    - name: Instalacja K3s (Worker Mode)
+      shell: |
+        curl -sfL https://get.k3s.io | K3S_URL=https://{{ master_ip }}:6443 K3S_TOKEN={{ token }} sh -
+      args:
+        creates: /usr/local/bin/k3s

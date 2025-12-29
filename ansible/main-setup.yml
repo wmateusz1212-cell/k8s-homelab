@@ -1,0 +1,40 @@
+---
+- name: Przygotowanie środowiska pod Kubernetes
+  hosts: all
+  become: yes  # Wykonuj wszystko jako root (sudo)
+  tasks:
+
+    - name: Aktualizacja cache apt i instalacja podstawowych narzędzi
+      apt:
+        update_cache: yes
+        name:
+          - curl
+          - wget
+          - git
+          - htop
+          - net-tools
+          - software-properties-common
+        state: present
+
+    - name: Wyłączenie Swap (wymagane przez Kubernetes!)
+      shell: |
+        swapoff -a
+        sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+    - name: Ładowanie modułów jądra dla containerd (overlay, br_netfilter)
+      shell: |
+        modprobe overlay
+        modprobe br_netfilter
+        cat <<EOF | tee /etc/modules-load.d/containerd.conf
+        overlay
+        br_netfilter
+        EOF
+
+    - name: Konfiguracja parametrów sieciowych sysctl (wymagane dla podów)
+      shell: |
+        cat <<EOF | tee /etc/sysctl.d/99-kubernetes-cri.conf
+        net.bridge.bridge-nf-call-iptables  = 1
+        net.ipv4.ip_forward                 = 1
+        net.bridge.bridge-nf-call-ip6tables = 1
+        EOF
+        sysctl --system
