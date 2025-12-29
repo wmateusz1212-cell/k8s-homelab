@@ -1,0 +1,29 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ "master" ]
+    paths:
+      - 'apps/base/index.html' # Uruchom tylko jak zmieni się strona
+      - 'apps/base/Dockerfile'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./apps/base
+          push: true
+          # Zastąp TWOJ_LOGIN_DOCKERHUB swoim loginem!
+          tags: wmateusz1212/my-k8s-app:latest, wmateusz1212/my-k8s-app:${{ github.sha }}
