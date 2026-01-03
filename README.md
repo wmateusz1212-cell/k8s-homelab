@@ -60,7 +60,7 @@ The system is designed to be resilient and automated. The flow of data and code 
 | **Monitoring** | **Prometheus Operator** | Cloud-native monitoring system. |
 | **Visualization** | **Grafana** | Analytics and interactive visualization web application. |
 | **CI/CD** | **GitHub Actions** | Automating the build, test, and deployment pipeline. |
-| **Networking** | **Traefik Ingress** | Modern HTTP reverse proxy and load balancer. |
+| **Networking** | **Nginx Ingress** | Modern HTTP reverse proxy and load balancer. |
 
 ---
 
